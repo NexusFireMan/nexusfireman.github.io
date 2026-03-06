@@ -1,22 +1,52 @@
 {
   "ctf": [
     {
+      "id": "htb-lame",
       "title": "Hack The Box - Lame",
       "platform": "HTB",
       "difficulty": "Easy",
       "year": 2025,
-      "description": "Enumeración SMB y explotación de servicio vulnerable para escalada local.",
+      "description": "Enumeracion SMB y explotacion de servicio vulnerable para escalada local.",
       "url": "https://github.com/NexusFireMan",
-      "tag": "Writeup"
+      "tag": "Writeup",
+      "sections": [
+        {
+          "title": "Recon",
+          "text": "Escaneo de puertos con Nmap, deteccion de servicios Samba y versionado para identificar vectores iniciales."
+        },
+        {
+          "title": "Explotacion",
+          "text": "Uso de vulnerabilidad en SMB para obtener shell inicial y validar contexto de usuario comprometido."
+        },
+        {
+          "title": "Post-Explotacion",
+          "text": "Enumeracion local, abuso de permisos y escalada a root para cierre completo de la maquina."
+        }
+      ]
     },
     {
+      "id": "thm-anonymous",
       "title": "TryHackMe - Anonymous",
       "platform": "THM",
       "difficulty": "Easy",
       "year": 2025,
-      "description": "Recon inicial, abuso de FTP y post-explotación en Linux.",
+      "description": "Recon inicial, abuso de FTP y post-explotacion en Linux.",
       "url": "https://github.com/NexusFireMan",
-      "tag": "Linux"
+      "tag": "Linux",
+      "sections": [
+        {
+          "title": "Enumeracion",
+          "text": "Mapeo de superficie de ataque y descubrimiento de recursos anonimos expuestos por FTP."
+        },
+        {
+          "title": "Acceso Inicial",
+          "text": "Aprovechamiento de configuraciones inseguras para colocar payload y conseguir shell remota."
+        },
+        {
+          "title": "Escalada",
+          "text": "Revision de tareas programadas y permisos para elevar privilegios y capturar flags."
+        }
+      ]
     }
   ],
   "exploits": [
@@ -24,7 +54,7 @@
       "title": "WordPress Plugin RCE PoC",
       "target": "WordPress",
       "severity": "High",
-      "description": "Proof of concept para ejecución remota en plugin vulnerable (entorno de laboratorio).",
+      "description": "Proof of concept para ejecucion remota en plugin vulnerable (entorno de laboratorio).",
       "url": "https://github.com/NexusFireMan",
       "tag": "PoC"
     },
@@ -32,7 +62,7 @@
       "title": "Buffer Overflow Demo",
       "target": "Binary",
       "severity": "Medium",
-      "description": "Explotación controlada de overflow para formación y práctica en entorno local.",
+      "description": "Explotacion controlada de overflow para formacion y practica en entorno local.",
       "url": "https://github.com/NexusFireMan",
       "tag": "BoF"
     }

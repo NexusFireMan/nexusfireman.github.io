@@ -24,7 +24,7 @@
     <nav>
       <ul class="menu">
         <li><a href="#home">Home</a></li>
-        <li><a href="#ctf">CTFs</a></li>
+        <li><a href="ctf.html">CTFs</a></li>
         <li><a href="#exploits">Exploits</a></li>
         <li><a href="#repos">Repos</a></li>
         <li><a href="#contact">Contacto</a></li>
@@ -40,22 +40,22 @@
         <p class="hero-text">
           Writeups, análisis técnico, explotación de vulnerabilidades y repositorios orientados a ciberseguridad ofensiva.
         </p>
-        <a class="btn" href="#ctf">Ver CTFs</a>
+        <a class="btn" href="ctf.html">Ver Todos Los CTFs</a>
       </div>
       <div class="terminal-card">
         <p><span class="prompt">$</span> cat profile.json</p>
-        <p>{</p>
-        <p>  "role": "Pentester",</p>
-        <p>  "focus": ["Web", "AD", "Binary Exploitation"],</p>
-        <p>  "status": "building & breaking"</p>
-        <p>}</p>
+        <pre id="terminal-output" class="terminal-output" aria-live="polite"></pre>
+        <span class="terminal-cursor" aria-hidden="true"></span>
       </div>
     </section>
 
     <section id="ctf" class="content-section">
-      <div class="section-head">
-        <h2>CTF Writeups</h2>
-        <p>Máquinas y retos resueltos con enfoque práctico.</p>
+      <div class="section-head section-head-with-action">
+        <div>
+          <h2>CTF Writeups</h2>
+          <p>Vista previa de laboratorios resueltos.</p>
+        </div>
+        <a class="inline-link" href="ctf.html">Abrir listado completo</a>
       </div>
       <div id="ctf-list" class="cards"></div>
     </section>
@@ -79,7 +79,7 @@
     <section id="contact" class="content-section contact">
       <h2>Contacto</h2>
       <p>GitHub: <a href="https://github.com/NexusFireMan" target="_blank" rel="noreferrer">@NexusFireMan</a></p>
-      <p>Email: <a href="mailto:contact@nexusfireman.dev">contact@nexusfireman.dev</a></p>
+      <p>Email: <a href="mailto:nexusfireman@proton.me">nexusfireman@proton.me</a></p>
     </section>
   </main>
 

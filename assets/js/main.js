@@ -1,32 +1,71 @@
 const yearEl = document.getElementById("year");
 yearEl.textContent = new Date().getFullYear();
 
+const terminalOutput = document.getElementById("terminal-output");
 const ctfList = document.getElementById("ctf-list");
 const exploitList = document.getElementById("exploit-list");
 const repoList = document.getElementById("repo-list");
+
+const terminalLines = [
+  "{",
+  "  \"role\": \"Pentester\",",
+  "  \"focus\": [\"Web\", \"AD\", \"Binary Exploitation\"],",
+  "  \"status\": \"building & breaking\"",
+  "}"
+];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const typeTerminal = async () => {
+  if (!terminalOutput) return;
+
+  terminalOutput.textContent = "";
+  for (const line of terminalLines) {
+    for (const char of line) {
+      terminalOutput.textContent += char;
+      await sleep(18);
+    }
+    terminalOutput.textContent += "\n";
+    await sleep(120);
+  }
+};
 
 const createCard = (item, type) => {
   const article = document.createElement("article");
   article.className = "card";
 
   let meta = "";
-  if (type === "ctf") meta = `${item.platform} · ${item.difficulty} · ${item.year}`;
+  let linkText = "Ver mas";
+  let link = item.url;
+  let external = true;
+
+  if (type === "ctf") {
+    meta = `${item.platform} · ${item.difficulty} · ${item.year}`;
+    linkText = "Abrir writeup";
+    link = `ctf-detail.html?id=${encodeURIComponent(item.id)}`;
+    external = false;
+  }
+
   if (type === "exploit") meta = `${item.target} · ${item.severity}`;
   if (type === "repo") meta = `${item.language} · ${item.category}`;
+
+  const linkAttrs = external ? 'target="_blank" rel="noreferrer"' : "";
 
   article.innerHTML = `
     <h3>${item.title}</h3>
     <p class="meta">${meta}</p>
     <p>${item.description}</p>
-    <a href="${item.url}" target="_blank" rel="noreferrer">Ver más</a>
+    <a href="${link}" ${linkAttrs}>${linkText}</a>
     ${item.tag ? `<div class="tag">${item.tag}</div>` : ""}
   `;
+
   return article;
 };
 
 const renderList = (target, items, type) => {
+  if (!target) return;
   if (!items.length) {
-    target.innerHTML = "<p>No hay contenido todavía.</p>";
+    target.innerHTML = "<p>No hay contenido todavia.</p>";
     return;
   }
 
@@ -41,15 +80,16 @@ const loadData = async () => {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
-    renderList(ctfList, data.ctf ?? [], "ctf");
+    renderList(ctfList, (data.ctf ?? []).slice(0, 3), "ctf");
     renderList(exploitList, data.exploits ?? [], "exploit");
     renderList(repoList, data.repos ?? [], "repo");
   } catch (error) {
     const message = `<p class="meta">Error cargando contenido: ${error.message}</p>`;
-    ctfList.innerHTML = message;
-    exploitList.innerHTML = message;
-    repoList.innerHTML = message;
+    if (ctfList) ctfList.innerHTML = message;
+    if (exploitList) exploitList.innerHTML = message;
+    if (repoList) repoList.innerHTML = message;
   }
 };
 
-loadData();
+await typeTerminal();
+await loadData();

@@ -156,7 +156,8 @@ h1 {
 
 .terminal-card,
 .card,
-.contact {
+.contact,
+.detail-card {
   border: 1px solid var(--border);
   background: linear-gradient(155deg, rgba(11, 18, 27, 0.85), rgba(6, 10, 15, 0.9));
   box-shadow: var(--shadow);
@@ -165,6 +166,22 @@ h1 {
 .terminal-card {
   padding: 1rem;
   color: #b7ffd1;
+  min-height: 235px;
+}
+
+.terminal-output {
+  margin: 0;
+  min-height: 150px;
+  white-space: pre-wrap;
+}
+
+.terminal-cursor {
+  width: 10px;
+  height: 1.05rem;
+  background: var(--accent);
+  display: inline-block;
+  animation: blink 1s steps(1, start) infinite;
+  vertical-align: baseline;
 }
 
 .prompt {
@@ -180,13 +197,21 @@ h1 {
   margin-top: -0.3rem;
 }
 
+.section-head-with-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
 }
 
-.card {
+.card,
+.detail-card {
   padding: 0.9rem;
 }
 
@@ -210,13 +235,45 @@ h1 {
   font-size: 0.78rem;
 }
 
-.card a {
+.card a,
+.inline-link,
+.detail-card a,
+.contact a {
   color: var(--text);
 }
 
 .card a:hover,
-.card a:focus-visible {
+.card a:focus-visible,
+.inline-link:hover,
+.inline-link:focus-visible,
+.detail-card a:hover,
+.detail-card a:focus-visible,
+.contact a:hover,
+.contact a:focus-visible {
   color: var(--accent);
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.filters select {
+  background: var(--bg-soft);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.55rem;
+  font-family: inherit;
+}
+
+.detail-card {
+  margin-top: 1rem;
+}
+
+.detail-card section {
+  margin-top: 1.2rem;
 }
 
 .contact {
@@ -230,6 +287,12 @@ footer {
   padding: 1rem;
 }
 
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 @media (max-width: 820px) {
   .topbar {
     flex-direction: column;
@@ -238,5 +301,10 @@ footer {
 
   .hero {
     grid-template-columns: 1fr;
+  }
+
+  .section-head-with-action {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
