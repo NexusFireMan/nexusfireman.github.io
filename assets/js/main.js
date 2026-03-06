@@ -1,4 +1,4 @@
-import { fetchCtfEntriesFromGithub } from "./ctf-source.js";
+import { fetchCtfEntries } from "./ctf-source.js";
 
 const yearEl = document.getElementById("year");
 yearEl.textContent = new Date().getFullYear();
@@ -78,19 +78,8 @@ const renderList = (target, items, type) => {
 
 const loadCtfPreview = async () => {
   try {
-    const githubCtf = await fetchCtfEntriesFromGithub();
-    renderList(ctfList, githubCtf.slice(0, 3), "ctf");
-    return;
-  } catch (_) {
-    // fallback local
-  }
-
-  try {
-    const response = await fetch("assets/data/content.json");
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    const fallback = (data.ctf ?? []).map((item) => ({ ...item, id: encodeURIComponent(item.id || item.title) }));
-    renderList(ctfList, fallback.slice(0, 3), "ctf");
+    const ctfEntries = await fetchCtfEntries();
+    renderList(ctfList, ctfEntries.slice(0, 3), "ctf");
   } catch (error) {
     ctfList.innerHTML = `<p class="meta">Error cargando CTFs: ${error.message}</p>`;
   }

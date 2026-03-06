@@ -1,4 +1,4 @@
-import { fetchCtfEntriesFromGithub } from "./ctf-source.js";
+import { fetchCtfEntries } from "./ctf-source.js";
 
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -31,7 +31,7 @@ const renderCtfList = (items) => {
 };
 
 try {
-  const ctfItems = await fetchCtfEntriesFromGithub();
+  const ctfItems = await fetchCtfEntries();
 
   const platforms = [...new Set(ctfItems.map((item) => item.platform))].sort((a, b) => a.localeCompare(b, "es"));
   platforms.forEach((platform) => {
@@ -50,5 +50,5 @@ try {
   platformFilter.addEventListener("change", applyFilter);
   applyFilter();
 } catch (error) {
-  ctfList.innerHTML = `<p class="meta">Error cargando CTFs desde GitHub: ${error.message}</p>`;
+  ctfList.innerHTML = `<p class="meta">Error cargando CTFs: ${error.message}</p>`;
 }
