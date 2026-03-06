@@ -1,3 +1,5 @@
+import { fetchCtfEntriesFromGithub } from "./ctf-source.js";
+
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear();
 
@@ -9,9 +11,9 @@ const createCtfCard = (item) => {
   article.className = "card";
   article.innerHTML = `
     <h3>${item.title}</h3>
-    <p class="meta">${item.platform} · ${item.difficulty} · ${item.year}</p>
+    <p class="meta">${item.platform} · ${item.difficulty ?? "N/A"} · ${item.year ?? "N/A"}</p>
     <p>${item.description}</p>
-    <a href="ctf-detail.html?id=${encodeURIComponent(item.id)}">Ver detalle</a>
+    <a href="ctf-detail.html?id=${item.id}">Ver detalle</a>
     ${item.tag ? `<div class="tag">${item.tag}</div>` : ""}
   `;
   return article;
@@ -29,12 +31,9 @@ const renderCtfList = (items) => {
 };
 
 try {
-  const response = await fetch("assets/data/content.json");
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  const data = await response.json();
-  const ctfItems = data.ctf ?? [];
+  const ctfItems = await fetchCtfEntriesFromGithub();
 
-  const platforms = [...new Set(ctfItems.map((item) => item.platform))].sort();
+  const platforms = [...new Set(ctfItems.map((item) => item.platform))].sort((a, b) => a.localeCompare(b, "es"));
   platforms.forEach((platform) => {
     const option = document.createElement("option");
     option.value = platform;
@@ -51,5 +50,5 @@ try {
   platformFilter.addEventListener("change", applyFilter);
   applyFilter();
 } catch (error) {
-  ctfList.innerHTML = `<p class="meta">Error cargando CTFs: ${error.message}</p>`;
+  ctfList.innerHTML = `<p class="meta">Error cargando CTFs desde GitHub: ${error.message}</p>`;
 }

@@ -1,3 +1,5 @@
+import { fetchCtfEntriesFromGithub } from "./ctf-source.js";
+
 const yearEl = document.getElementById("year");
 yearEl.textContent = new Date().getFullYear();
 
@@ -40,9 +42,9 @@ const createCard = (item, type) => {
   let external = true;
 
   if (type === "ctf") {
-    meta = `${item.platform} · ${item.difficulty} · ${item.year}`;
+    meta = `${item.platform} · ${item.difficulty ?? "N/A"} · ${item.year ?? "N/A"}`;
     linkText = "Abrir writeup";
-    link = `ctf-detail.html?id=${encodeURIComponent(item.id)}`;
+    link = `ctf-detail.html?id=${item.id}`;
     external = false;
   }
 
@@ -74,22 +76,40 @@ const renderList = (target, items, type) => {
   target.replaceChildren(fragment);
 };
 
+const loadCtfPreview = async () => {
+  try {
+    const githubCtf = await fetchCtfEntriesFromGithub();
+    renderList(ctfList, githubCtf.slice(0, 3), "ctf");
+    return;
+  } catch (_) {
+    // fallback local
+  }
+
+  try {
+    const response = await fetch("assets/data/content.json");
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    const fallback = (data.ctf ?? []).map((item) => ({ ...item, id: encodeURIComponent(item.id || item.title) }));
+    renderList(ctfList, fallback.slice(0, 3), "ctf");
+  } catch (error) {
+    ctfList.innerHTML = `<p class="meta">Error cargando CTFs: ${error.message}</p>`;
+  }
+};
+
 const loadData = async () => {
   try {
     const response = await fetch("assets/data/content.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
-    renderList(ctfList, (data.ctf ?? []).slice(0, 3), "ctf");
     renderList(exploitList, data.exploits ?? [], "exploit");
     renderList(repoList, data.repos ?? [], "repo");
   } catch (error) {
     const message = `<p class="meta">Error cargando contenido: ${error.message}</p>`;
-    if (ctfList) ctfList.innerHTML = message;
     if (exploitList) exploitList.innerHTML = message;
     if (repoList) repoList.innerHTML = message;
   }
 };
 
 await typeTerminal();
-await loadData();
+await Promise.all([loadCtfPreview(), loadData()]);
