@@ -1,0 +1,58 @@
+{
+  "ctf": [
+    {
+      "title": "Hack The Box - Lame",
+      "platform": "HTB",
+      "difficulty": "Easy",
+      "year": 2025,
+      "description": "Enumeración SMB y explotación de servicio vulnerable para escalada local.",
+      "url": "https://github.com/NexusFireMan",
+      "tag": "Writeup"
+    },
+    {
+      "title": "TryHackMe - Anonymous",
+      "platform": "THM",
+      "difficulty": "Easy",
+      "year": 2025,
+      "description": "Recon inicial, abuso de FTP y post-explotación en Linux.",
+      "url": "https://github.com/NexusFireMan",
+      "tag": "Linux"
+    }
+  ],
+  "exploits": [
+    {
+      "title": "WordPress Plugin RCE PoC",
+      "target": "WordPress",
+      "severity": "High",
+      "description": "Proof of concept para ejecución remota en plugin vulnerable (entorno de laboratorio).",
+      "url": "https://github.com/NexusFireMan",
+      "tag": "PoC"
+    },
+    {
+      "title": "Buffer Overflow Demo",
+      "target": "Binary",
+      "severity": "Medium",
+      "description": "Explotación controlada de overflow para formación y práctica en entorno local.",
+      "url": "https://github.com/NexusFireMan",
+      "tag": "BoF"
+    }
+  ],
+  "repos": [
+    {
+      "title": "portfolio",
+      "language": "HTML/CSS/JS",
+      "category": "Personal Site",
+      "description": "Portfolio principal del perfil profesional.",
+      "url": "https://github.com/NexusFireMan/portfolio",
+      "tag": "Main"
+    },
+    {
+      "title": "nexusfireman.github.io",
+      "language": "HTML/CSS/JS",
+      "category": "OffSec Site",
+      "description": "Sitio orientado a CTF, exploit-dev y seguridad ofensiva.",
+      "url": "https://github.com/NexusFireMan/nexusfireman.github.io",
+      "tag": "WIP"
+    }
+  ]
+}
