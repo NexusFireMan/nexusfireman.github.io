@@ -7,7 +7,7 @@ const API_MARKDOWN = "https://api.github.com/markdown";
 const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
 const CONTENT_FALLBACK = "assets/data/content.json";
 const CACHE_KEY = "ctf_tree_cache_v1";
-const META_CACHE_KEY = "ctf_meta_cache_v2";
+const META_CACHE_KEY = "ctf_meta_cache_v3";
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 const encodePath = (path) => path.split("/").map((part) => encodeURIComponent(part)).join("/");
@@ -44,25 +44,20 @@ const pickMeta = (meta, ...keys) => {
 };
 
 const parseFrontMatter = (markdown) => {
-  const normalized = markdown.replace(/\r\n/g, "\n");
-  if (!normalized.startsWith("---\n")) return { meta: {}, body: normalized };
+  const normalized = markdown.replace(/\r\n/g, "\n").replace(/^\uFEFF/, "");
+  const match = normalized.match(/^---\n([\s\S]*?)\n---(?:\n|$)/);
+  if (!match) return { meta: {}, body: normalized };
 
-  const end = normalized.indexOf("\n---\n", 4);
-  if (end === -1) return { meta: {}, body: normalized };
-
-  const frontMatterBlock = normalized.slice(4, end);
-  const body = normalized.slice(end + 5).trimStart();
+  const frontMatterBlock = match[1];
+  const body = normalized.slice(match[0].length).trimStart();
   const meta = {};
 
   frontMatterBlock.split("\n").forEach((line) => {
-    const separator = line.indexOf(":");
-    if (separator === -1) return;
-
-    const rawKey = line.slice(0, separator).trim();
-    const rawValue = line.slice(separator + 1).trim();
-    if (!rawKey || !rawValue) return;
-
-    meta[normalizeMetaKey(rawKey)] = rawValue;
+    // Only parse plain "key: value" lines, ignore list items and nested YAML.
+    const kv = line.match(/^\s*([A-Za-zÀ-ÿ0-9_ -]+?)\s*:\s*(.+?)\s*$/);
+    if (!kv) return;
+    if (kv[1].trim().startsWith("-")) return;
+    meta[normalizeMetaKey(kv[1])] = kv[2].trim();
   });
 
   return { meta, body };
@@ -145,8 +140,10 @@ const saveMetaCache = (cache) => {
 
 const hasUsableDateMeta = (meta) => {
   if (!meta) return false;
-  if (meta.date && String(meta.date).trim()) return true;
-  return false;
+  return Boolean(
+    meta.date && String(meta.date).trim() &&
+    meta.difficulty && String(meta.difficulty).trim()
+  );
 };
 
 const getTreeFromGithub = async () => {
