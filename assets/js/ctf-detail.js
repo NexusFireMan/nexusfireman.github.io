@@ -17,9 +17,9 @@ const renderMissing = (message) => {
 const fallbackLocalDetail = async (id) => {
   const response = await fetch("assets/data/content.json");
   if (!response.ok) throw new Error(`Fallback HTTP ${response.status}`);
+
   const data = await response.json();
   const decodedId = decodeURIComponent(id);
-
   const item = (data.ctf || []).find((entry) => {
     const candidate = entry.path || entry.id || entry.title;
     return candidate === decodedId || encodeURIComponent(candidate) === id;
@@ -35,8 +35,31 @@ const fallbackLocalDetail = async (id) => {
     title: item.title || "Writeup",
     platform: item.platform || "Unknown",
     html,
-    githubUrl: item.url || ""
+    githubUrl: item.url || "",
+    status: "",
+    os: "",
+    difficulty: item.difficulty || "",
+    vector: "",
+    datetime: item.year ? String(item.year) : ""
   };
+};
+
+const buildMetaPills = (writeup) => {
+  const pills = [
+    ["Estado", writeup.status],
+    ["SO", writeup.os],
+    ["Dificultad", writeup.difficulty],
+    ["Vector", writeup.vector],
+    ["Fecha", writeup.datetime]
+  ].filter(([, value]) => value);
+
+  if (!pills.length) return "";
+
+  return `
+    <div class="meta-pills">
+      ${pills.map(([label, value]) => `<span class="pill"><strong>${label}:</strong> ${value}</span>`).join("")}
+    </div>
+  `;
 };
 
 if (!ctfId) {
@@ -52,9 +75,10 @@ if (!ctfId) {
     }
 
     detailEl.innerHTML = `
-      <header>
+      <header class="writeup-header">
         <h1>${writeup.title}</h1>
         <p class="meta">${writeup.platform}</p>
+        ${buildMetaPills(writeup)}
       </header>
       <div class="markdown-content">${writeup.html}</div>
       ${writeup.githubUrl ? `<p><a href="${writeup.githubUrl}" target="_blank" rel="noreferrer">Ver archivo original en GitHub</a></p>` : ""}

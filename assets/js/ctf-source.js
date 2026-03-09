@@ -3,6 +3,7 @@ const REPO = "CTF";
 const BRANCH = "main";
 
 const API_TREE = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`;
+const API_MARKDOWN = "https://api.github.com/markdown";
 const CONTENT_FALLBACK = "assets/data/content.json";
 const CACHE_KEY = "ctf_tree_cache_v1";
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -18,71 +19,6 @@ const escapeHtml = (text) => text
   .replaceAll('"', "&quot;")
   .replaceAll("'", "&#39;");
 
-const inlineFormat = (text) => text
-  .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-  .replace(/\*(.*?)\*/g, "<em>$1</em>")
-  .replace(/`(.*?)`/g, "<code>$1</code>")
-  .replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
-
-const mdToHtml = (markdown) => {
-  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
-  const html = [];
-
-  for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-
-    if (!line.trim()) {
-      html.push("");
-      continue;
-    }
-
-    if (line.startsWith("### ")) {
-      html.push(`<h3>${escapeHtml(line.slice(4))}</h3>`);
-      continue;
-    }
-
-    if (line.startsWith("## ")) {
-      html.push(`<h2>${escapeHtml(line.slice(3))}</h2>`);
-      continue;
-    }
-
-    if (line.startsWith("# ")) {
-      html.push(`<h1>${escapeHtml(line.slice(2))}</h1>`);
-      continue;
-    }
-
-    if (line.startsWith("- ")) {
-      const listItem = `<li>${inlineFormat(escapeHtml(line.slice(2)))}</li>`;
-      const previous = html[html.length - 1] || "";
-      if (previous.endsWith("</ul>")) {
-        html[html.length - 1] = previous.replace(/<\/ul>$/, `${listItem}</ul>`);
-      } else {
-        html.push(`<ul>${listItem}</ul>`);
-      }
-      continue;
-    }
-
-    if (line.startsWith("```")) {
-      const previous = html[html.length - 1] || "";
-      if (previous.includes("<pre><code>")) {
-        html[html.length - 1] = `${previous}</code></pre>`;
-      } else {
-        html.push("<pre><code>");
-      }
-      continue;
-    }
-
-    const previous = html[html.length - 1] || "";
-    if (previous.includes("<pre><code>") && !previous.includes("</code></pre>")) {
-      html[html.length - 1] = `${previous}${escapeHtml(rawLine)}\n`;
-    } else {
-      html.push(`<p>${inlineFormat(escapeHtml(line))}</p>`);
-    }
-  }
-
-  return html.filter(Boolean).join("\n");
-};
-
 const niceName = (filename) => filename
   .replace(/\.md$/i, "")
   .replaceAll("_", " ")
@@ -95,6 +31,57 @@ const titleCase = (text) => text
   .filter(Boolean)
   .map((word) => word[0].toUpperCase() + word.slice(1))
   .join(" ");
+
+const normalizeMetaKey = (key) => key.toLowerCase().trim().normalize("NFD").replace(/[^a-z0-9]/g, "");
+
+const pickMeta = (meta, ...keys) => {
+  for (const key of keys) {
+    if (meta[key]) return meta[key];
+  }
+  return "";
+};
+
+const parseFrontMatter = (markdown) => {
+  const normalized = markdown.replace(/\r\n/g, "\n");
+  if (!normalized.startsWith("---\n")) return { meta: {}, body: normalized };
+
+  const end = normalized.indexOf("\n---\n", 4);
+  if (end === -1) return { meta: {}, body: normalized };
+
+  const frontMatterBlock = normalized.slice(4, end);
+  const body = normalized.slice(end + 5).trimStart();
+  const meta = {};
+
+  frontMatterBlock.split("\n").forEach((line) => {
+    const separator = line.indexOf(":");
+    if (separator === -1) return;
+
+    const rawKey = line.slice(0, separator).trim();
+    const rawValue = line.slice(separator + 1).trim();
+    if (!rawKey || !rawValue) return;
+
+    meta[normalizeMetaKey(rawKey)] = rawValue;
+  });
+
+  return { meta, body };
+};
+
+const renderMarkdownWithGithub = async (markdown) => {
+  const response = await fetch(API_MARKDOWN, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      text: markdown,
+      mode: "gfm",
+      context: `${OWNER}/${REPO}`
+    })
+  });
+
+  if (!response.ok) throw new Error(`GitHub Markdown API ${response.status}`);
+  return response.text();
+};
 
 const buildEntry = (path) => {
   const parts = path.split("/");
@@ -119,6 +106,7 @@ const loadCachedTree = () => {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;
+
     const parsed = JSON.parse(raw);
     if (Date.now() - parsed.savedAt > CACHE_TTL_MS) return null;
     return parsed.tree;
@@ -138,6 +126,7 @@ const saveCachedTree = (tree) => {
 const getTreeFromGithub = async () => {
   const response = await fetch(API_TREE);
   if (!response.ok) throw new Error(`GitHub API ${response.status}`);
+
   const data = await response.json();
   const tree = data.tree || [];
   saveCachedTree(tree);
@@ -160,6 +149,7 @@ const entriesFromTree = (tree) => tree
 const getLocalFallbackEntries = async () => {
   const response = await fetch(CONTENT_FALLBACK);
   if (!response.ok) throw new Error(`Fallback HTTP ${response.status}`);
+
   const data = await response.json();
   return (data.ctf || []).map((item) => ({
     id: encodeId(item.path || item.id || item.title),
@@ -189,18 +179,34 @@ export const fetchCtfMarkdownById = async (id) => {
 
   const response = await fetch(apiUrl);
   if (!response.ok) throw new Error(`GitHub API ${response.status}`);
-  const data = await response.json();
 
+  const data = await response.json();
   const b64 = (data.content || "").replace(/\n/g, "");
   const bytes = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0));
   const markdown = new TextDecoder("utf-8").decode(bytes);
 
+  const { meta, body } = parseFrontMatter(markdown);
+  const content = body || markdown;
+
+  let html;
+  try {
+    html = await renderMarkdownWithGithub(content);
+  } catch {
+    html = `<pre>${escapeHtml(content)}</pre>`;
+  }
+
   return {
     path,
     markdown,
-    html: mdToHtml(markdown),
+    html,
+    meta,
     githubUrl: data.html_url || `https://github.com/${OWNER}/${REPO}/blob/${BRANCH}/${encodeURI(path)}`,
-    title: titleCase(niceName(path.split("/").pop() || "Writeup")),
-    platform: path.split("/")[0] || "Unknown"
+    title: pickMeta(meta, "titulo", "title") || titleCase(niceName(path.split("/").pop() || "Writeup")),
+    platform: pickMeta(meta, "plataforma", "platform") || path.split("/")[0] || "Unknown",
+    status: pickMeta(meta, "estado", "status"),
+    os: pickMeta(meta, "so", "os"),
+    difficulty: pickMeta(meta, "dificultad", "difficulty"),
+    vector: pickMeta(meta, "vectorinicial", "vector", "initialvector"),
+    datetime: pickMeta(meta, "fecha", "date")
   };
 };
