@@ -142,6 +142,12 @@ const saveMetaCache = (cache) => {
   }
 };
 
+const hasUsableDateMeta = (meta) => {
+  if (!meta) return false;
+  if (meta.date && String(meta.date).trim()) return true;
+  return false;
+};
+
 const getTreeFromGithub = async () => {
   const response = await fetch(API_TREE);
   if (!response.ok) throw new Error(`GitHub API ${response.status}`);
@@ -211,7 +217,7 @@ const enrichEntriesWithMeta = async (entries) => {
 
   const enriched = await Promise.all(entries.map(async (entry) => {
     const cached = metaCache[entry.path];
-    if (cached && cached.sha === entry.sha) {
+    if (cached && cached.sha === entry.sha && hasUsableDateMeta(cached.meta)) {
       return { ...entry, ...cached.meta };
     }
 
