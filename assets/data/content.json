@@ -69,6 +69,22 @@
   ],
   "repos": [
     {
+      "title": "gomap",
+      "language": "Go",
+      "category": "Pentest Tooling",
+      "description": "Escaner de puertos rapido y sigiloso en Go, muy util para fases de reconocimiento en pentesting.",
+      "url": "https://github.com/NexusFireMan/gomap",
+      "tag": "Featured"
+    },
+    {
+      "title": "pentest-workflow-scripts",
+      "language": "Shell",
+      "category": "Pentest Automation",
+      "description": "Coleccion de scripts Bash para automatizar y mejorar el flujo de trabajo de pentesting en Linux.",
+      "url": "https://github.com/NexusFireMan/pentest-workflow-scripts",
+      "tag": "Automation"
+    },
+    {
       "title": "portfolio",
       "language": "HTML/CSS/JS",
       "category": "Personal Site",
