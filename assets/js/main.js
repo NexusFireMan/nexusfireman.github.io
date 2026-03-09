@@ -50,7 +50,11 @@ const createCard = (item, type) => {
   }
 
   if (type === "exploit") {
-    meta = `${item.category ?? item.target} · ${item.severity ?? "N/A"}`;
+    const metaParts = [
+      item.category ?? item.target,
+      item.severity && item.severity !== "N/A" ? item.severity : ""
+    ].filter(Boolean);
+    meta = metaParts.join(" · ");
     linkText = "Abrir detalle";
     link = `exploit-detail.html?id=${item.id}`;
     external = false;
