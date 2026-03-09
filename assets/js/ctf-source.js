@@ -4,9 +4,10 @@ const BRANCH = "main";
 
 const API_TREE = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRANCH}?recursive=1`;
 const API_MARKDOWN = "https://api.github.com/markdown";
+const RAW_BASE = `https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}`;
 const CONTENT_FALLBACK = "assets/data/content.json";
 const CACHE_KEY = "ctf_tree_cache_v1";
-const META_CACHE_KEY = "ctf_meta_cache_v1";
+const META_CACHE_KEY = "ctf_meta_cache_v2";
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 const encodePath = (path) => path.split("/").map((part) => encodeURIComponent(part)).join("/");
@@ -189,6 +190,15 @@ const dateToTimestamp = (value) => {
   return Date.parse(`${yearMatch[0]}-01-01`) || 0;
 };
 
+const dateToSortKey = (value) => {
+  if (!value) return "0000-00-00";
+  const match = String(value).match(/\b\d{4}-\d{2}-\d{2}\b/);
+  if (match) return match[0];
+  const parsed = dateToTimestamp(value);
+  if (!parsed) return "0000-00-00";
+  return new Date(parsed).toISOString().slice(0, 10);
+};
+
 const getEntryMetaFromMarkdown = (markdown, fallbackPlatform) => {
   const { meta } = parseFrontMatter(markdown);
   const rawDate = pickMeta(meta, "fecha", "date");
@@ -201,14 +211,10 @@ const getEntryMetaFromMarkdown = (markdown, fallbackPlatform) => {
 };
 
 const fetchEntryMeta = async (path, fallbackPlatform) => {
-  const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${encodePath(path)}?ref=${BRANCH}`;
-  const response = await fetch(apiUrl);
-  if (!response.ok) throw new Error(`GitHub API ${response.status}`);
-
-  const data = await response.json();
-  const b64 = (data.content || "").replace(/\n/g, "");
-  const bytes = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0));
-  const markdown = new TextDecoder("utf-8").decode(bytes);
+  const rawUrl = `${RAW_BASE}/${encodePath(path)}`;
+  const response = await fetch(rawUrl);
+  if (!response.ok) throw new Error(`Raw fetch ${response.status}`);
+  const markdown = await response.text();
   return getEntryMetaFromMarkdown(markdown, fallbackPlatform);
 };
 
@@ -231,7 +237,12 @@ const enrichEntriesWithMeta = async (entries) => {
   }));
 
   saveMetaCache(metaCache);
-  return enriched.sort((a, b) => dateToTimestamp(b.date) - dateToTimestamp(a.date));
+  return enriched.sort((a, b) => {
+    const keyA = dateToSortKey(a.date);
+    const keyB = dateToSortKey(b.date);
+    if (keyA !== keyB) return keyB.localeCompare(keyA);
+    return a.title.localeCompare(b.title, "es");
+  });
 };
 
 const getLocalFallbackEntries = async () => {
