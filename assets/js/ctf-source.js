@@ -173,12 +173,24 @@ const extractYear = (dateValue) => {
   return match ? match[0] : "N/A";
 };
 
+const dateToTimestamp = (value) => {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  if (!Number.isNaN(parsed)) return parsed;
+
+  const yearMatch = String(value).match(/\b(19|20)\d{2}\b/);
+  if (!yearMatch) return 0;
+  return Date.parse(`${yearMatch[0]}-01-01`) || 0;
+};
+
 const getEntryMetaFromMarkdown = (markdown, fallbackPlatform) => {
   const { meta } = parseFrontMatter(markdown);
+  const rawDate = pickMeta(meta, "fecha", "date");
   return {
     platform: pickMeta(meta, "plataforma", "platform") || fallbackPlatform,
     difficulty: pickMeta(meta, "dificultad", "difficulty") || "N/A",
-    year: extractYear(pickMeta(meta, "fecha", "date"))
+    year: extractYear(rawDate),
+    date: rawDate || ""
   };
 };
 
@@ -213,7 +225,7 @@ const enrichEntriesWithMeta = async (entries) => {
   }));
 
   saveMetaCache(metaCache);
-  return enriched;
+  return enriched.sort((a, b) => dateToTimestamp(b.date) - dateToTimestamp(a.date));
 };
 
 const getLocalFallbackEntries = async () => {
