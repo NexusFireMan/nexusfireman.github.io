@@ -6,6 +6,7 @@ const API_TREE = `https://api.github.com/repos/${OWNER}/${REPO}/git/trees/${BRAN
 const API_MARKDOWN = "https://api.github.com/markdown";
 const CONTENT_FALLBACK = "assets/data/content.json";
 const CACHE_KEY = "ctf_tree_cache_v1";
+const META_CACHE_KEY = "ctf_meta_cache_v1";
 const CACHE_TTL_MS = 60 * 60 * 1000;
 
 const encodePath = (path) => path.split("/").map((part) => encodeURIComponent(part)).join("/");
@@ -123,6 +124,24 @@ const saveCachedTree = (tree) => {
   }
 };
 
+const loadMetaCache = () => {
+  try {
+    const raw = localStorage.getItem(META_CACHE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+};
+
+const saveMetaCache = (cache) => {
+  try {
+    localStorage.setItem(META_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore cache failures
+  }
+};
+
 const getTreeFromGithub = async () => {
   const response = await fetch(API_TREE);
   if (!response.ok) throw new Error(`GitHub API ${response.status}`);
@@ -141,10 +160,61 @@ const getTree = async () => {
 
 const entriesFromTree = (tree) => tree
   .filter((entry) => entry.type === "blob")
-  .map((entry) => entry.path)
-  .filter((path) => /\.md$/i.test(path) && path.includes("/"))
-  .sort((a, b) => a.localeCompare(b, "es"))
-  .map(buildEntry);
+  .filter((entry) => /\.md$/i.test(entry.path) && entry.path.includes("/"))
+  .sort((a, b) => a.path.localeCompare(b.path, "es"))
+  .map((entry) => ({
+    ...buildEntry(entry.path),
+    sha: entry.sha || ""
+  }));
+
+const extractYear = (dateValue) => {
+  if (!dateValue) return "N/A";
+  const match = String(dateValue).match(/\b(19|20)\d{2}\b/);
+  return match ? match[0] : "N/A";
+};
+
+const getEntryMetaFromMarkdown = (markdown, fallbackPlatform) => {
+  const { meta } = parseFrontMatter(markdown);
+  return {
+    platform: pickMeta(meta, "plataforma", "platform") || fallbackPlatform,
+    difficulty: pickMeta(meta, "dificultad", "difficulty") || "N/A",
+    year: extractYear(pickMeta(meta, "fecha", "date"))
+  };
+};
+
+const fetchEntryMeta = async (path, fallbackPlatform) => {
+  const apiUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${encodePath(path)}?ref=${BRANCH}`;
+  const response = await fetch(apiUrl);
+  if (!response.ok) throw new Error(`GitHub API ${response.status}`);
+
+  const data = await response.json();
+  const b64 = (data.content || "").replace(/\n/g, "");
+  const bytes = Uint8Array.from(atob(b64), (char) => char.charCodeAt(0));
+  const markdown = new TextDecoder("utf-8").decode(bytes);
+  return getEntryMetaFromMarkdown(markdown, fallbackPlatform);
+};
+
+const enrichEntriesWithMeta = async (entries) => {
+  const metaCache = loadMetaCache();
+
+  const enriched = await Promise.all(entries.map(async (entry) => {
+    const cached = metaCache[entry.path];
+    if (cached && cached.sha === entry.sha) {
+      return { ...entry, ...cached.meta };
+    }
+
+    try {
+      const meta = await fetchEntryMeta(entry.path, entry.platform);
+      metaCache[entry.path] = { sha: entry.sha, meta };
+      return { ...entry, ...meta };
+    } catch {
+      return entry;
+    }
+  }));
+
+  saveMetaCache(metaCache);
+  return enriched;
+};
 
 const getLocalFallbackEntries = async () => {
   const response = await fetch(CONTENT_FALLBACK);
@@ -167,7 +237,8 @@ const getLocalFallbackEntries = async () => {
 export const fetchCtfEntries = async () => {
   try {
     const tree = await getTree();
-    return entriesFromTree(tree);
+    const entries = entriesFromTree(tree);
+    return enrichEntriesWithMeta(entries);
   } catch {
     return getLocalFallbackEntries();
   }
