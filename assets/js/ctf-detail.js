@@ -1,4 +1,5 @@
 import { fetchCtfMarkdownById } from "./ctf-source.js";
+import { escapeHtml, safeExternalUrl } from "./security-utils.js";
 
 const yearEl = document.getElementById("year");
 if (yearEl) yearEl.textContent = new Date().getFullYear();
@@ -10,7 +11,7 @@ const ctfId = params.get("id");
 const renderMissing = (message) => {
   detailEl.innerHTML = `
     <h1>Writeup no encontrado</h1>
-    <p class="meta">${message}</p>
+    <p class="meta">${escapeHtml(message)}</p>
   `;
 };
 
@@ -28,7 +29,7 @@ const fallbackLocalDetail = async (id) => {
   if (!item) throw new Error("Sin fallback local para este writeup");
 
   const html = (item.sections || [])
-    .map((section) => `<section><h2>${section.title}</h2><p>${section.text}</p></section>`)
+    .map((section) => `<section><h2>${escapeHtml(section.title)}</h2><p>${escapeHtml(section.text)}</p></section>`)
     .join("");
 
   return {
@@ -57,7 +58,7 @@ const buildMetaPills = (writeup) => {
 
   return `
     <div class="meta-pills">
-      ${pills.map(([label, value]) => `<span class="pill"><strong>${label}:</strong> ${value}</span>`).join("")}
+      ${pills.map(([label, value]) => `<span class="pill"><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</span>`).join("")}
     </div>
   `;
 };
@@ -74,14 +75,16 @@ if (!ctfId) {
       writeup = await fallbackLocalDetail(ctfId);
     }
 
+    const safeUrl = safeExternalUrl(writeup.githubUrl);
+
     detailEl.innerHTML = `
       <header class="writeup-header">
-        <h1>${writeup.title}</h1>
-        <p class="meta">${writeup.platform}</p>
+        <h1>${escapeHtml(writeup.title)}</h1>
+        <p class="meta">${escapeHtml(writeup.platform)}</p>
         ${buildMetaPills(writeup)}
       </header>
       <div class="markdown-content">${writeup.html}</div>
-      ${writeup.githubUrl ? `<p><a href="${writeup.githubUrl}" target="_blank" rel="noreferrer">Ver archivo original en GitHub</a></p>` : ""}
+      ${safeUrl ? `<p><a href="${safeUrl}" target="_blank" rel="noreferrer">Ver archivo original en GitHub</a></p>` : ""}
     `;
 
     document.title = `${writeup.title} | CTF | NexusFireMan`;

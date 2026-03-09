@@ -1,5 +1,6 @@
 import { fetchCtfEntries } from "./ctf-source.js";
 import { fetchExploitEntries } from "./exploit-source.js";
+import { safeExternalUrl } from "./security-utils.js";
 
 const yearEl = document.getElementById("year");
 yearEl.textContent = new Date().getFullYear();
@@ -59,17 +60,39 @@ const createCard = (item, type) => {
     link = `exploit-detail.html?id=${item.id}`;
     external = false;
   }
+
   if (type === "repo") meta = `${item.language} · ${item.category}`;
 
-  const linkAttrs = external ? 'target="_blank" rel="noreferrer"' : "";
+  const titleEl = document.createElement("h3");
+  titleEl.textContent = item.title ?? "Sin titulo";
 
-  article.innerHTML = `
-    <h3>${item.title}</h3>
-    <p class="meta">${meta}</p>
-    <p>${item.description}</p>
-    <a href="${link}" ${linkAttrs}>${linkText}</a>
-    ${item.tag ? `<div class="tag">${item.tag}</div>` : ""}
-  `;
+  const metaEl = document.createElement("p");
+  metaEl.className = "meta";
+  metaEl.textContent = meta;
+
+  const descEl = document.createElement("p");
+  descEl.textContent = item.description ?? "";
+
+  const linkEl = document.createElement("a");
+  linkEl.textContent = linkText;
+
+  if (external) {
+    const safeUrl = safeExternalUrl(link);
+    linkEl.href = safeUrl || "#";
+    linkEl.target = "_blank";
+    linkEl.rel = "noreferrer";
+  } else {
+    linkEl.href = link;
+  }
+
+  article.append(titleEl, metaEl, descEl, linkEl);
+
+  if (item.tag) {
+    const tagEl = document.createElement("div");
+    tagEl.className = "tag";
+    tagEl.textContent = item.tag;
+    article.appendChild(tagEl);
+  }
 
   return article;
 };
@@ -77,7 +100,7 @@ const createCard = (item, type) => {
 const renderList = (target, items, type) => {
   if (!target) return;
   if (!items.length) {
-    target.innerHTML = "<p>No hay contenido todavia.</p>";
+    target.textContent = "No hay contenido todavia.";
     return;
   }
 
@@ -91,7 +114,7 @@ const loadCtfPreview = async () => {
     const ctfEntries = await fetchCtfEntries();
     renderList(ctfList, ctfEntries.slice(0, 3), "ctf");
   } catch (error) {
-    ctfList.innerHTML = `<p class="meta">Error cargando CTFs: ${error.message}</p>`;
+    ctfList.textContent = `Error cargando CTFs: ${error.message}`;
   }
 };
 
@@ -100,7 +123,7 @@ const loadExploitPreview = async () => {
     const exploitEntries = await fetchExploitEntries();
     renderList(exploitList, exploitEntries.slice(0, 3), "exploit");
   } catch (error) {
-    exploitList.innerHTML = `<p class="meta">Error cargando exploits: ${error.message}</p>`;
+    exploitList.textContent = `Error cargando exploits: ${error.message}`;
   }
 };
 
@@ -112,8 +135,7 @@ const loadData = async () => {
 
     renderList(repoList, data.repos ?? [], "repo");
   } catch (error) {
-    const message = `<p class="meta">Error cargando contenido: ${error.message}</p>`;
-    if (repoList) repoList.innerHTML = message;
+    if (repoList) repoList.textContent = `Error cargando contenido: ${error.message}`;
   }
 };
 

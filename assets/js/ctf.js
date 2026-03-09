@@ -9,19 +9,36 @@ const platformFilter = document.getElementById("platform-filter");
 const createCtfCard = (item) => {
   const article = document.createElement("article");
   article.className = "card";
-  article.innerHTML = `
-    <h3>${item.title}</h3>
-    <p class="meta">${item.platform} · ${item.difficulty ?? "N/A"} · ${item.year ?? "N/A"}</p>
-    <p>${item.description}</p>
-    <a href="ctf-detail.html?id=${item.id}">Ver detalle</a>
-    ${item.tag ? `<div class="tag">${item.tag}</div>` : ""}
-  `;
+
+  const titleEl = document.createElement("h3");
+  titleEl.textContent = item.title ?? "Sin titulo";
+
+  const metaEl = document.createElement("p");
+  metaEl.className = "meta";
+  metaEl.textContent = `${item.platform} · ${item.difficulty ?? "N/A"} · ${item.year ?? "N/A"}`;
+
+  const descEl = document.createElement("p");
+  descEl.textContent = item.description ?? "";
+
+  const linkEl = document.createElement("a");
+  linkEl.href = `ctf-detail.html?id=${item.id}`;
+  linkEl.textContent = "Ver detalle";
+
+  article.append(titleEl, metaEl, descEl, linkEl);
+
+  if (item.tag) {
+    const tagEl = document.createElement("div");
+    tagEl.className = "tag";
+    tagEl.textContent = item.tag;
+    article.appendChild(tagEl);
+  }
+
   return article;
 };
 
 const renderCtfList = (items) => {
   if (!items.length) {
-    ctfList.innerHTML = "<p>No hay CTFs para este filtro.</p>";
+    ctfList.textContent = "No hay CTFs para este filtro.";
     return;
   }
 
@@ -50,5 +67,5 @@ try {
   platformFilter.addEventListener("change", applyFilter);
   applyFilter();
 } catch (error) {
-  ctfList.innerHTML = `<p class="meta">Error cargando CTFs: ${error.message}</p>`;
+  ctfList.textContent = `Error cargando CTFs: ${error.message}`;
 }
