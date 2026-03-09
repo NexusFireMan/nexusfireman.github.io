@@ -1,4 +1,5 @@
 import { fetchCtfEntries } from "./ctf-source.js";
+import { fetchExploitEntries } from "./exploit-source.js";
 
 const yearEl = document.getElementById("year");
 yearEl.textContent = new Date().getFullYear();
@@ -48,7 +49,12 @@ const createCard = (item, type) => {
     external = false;
   }
 
-  if (type === "exploit") meta = `${item.target} · ${item.severity}`;
+  if (type === "exploit") {
+    meta = `${item.category ?? item.target} · ${item.severity ?? "N/A"}`;
+    linkText = "Abrir detalle";
+    link = `exploit-detail.html?id=${item.id}`;
+    external = false;
+  }
   if (type === "repo") meta = `${item.language} · ${item.category}`;
 
   const linkAttrs = external ? 'target="_blank" rel="noreferrer"' : "";
@@ -85,20 +91,27 @@ const loadCtfPreview = async () => {
   }
 };
 
+const loadExploitPreview = async () => {
+  try {
+    const exploitEntries = await fetchExploitEntries();
+    renderList(exploitList, exploitEntries.slice(0, 3), "exploit");
+  } catch (error) {
+    exploitList.innerHTML = `<p class="meta">Error cargando exploits: ${error.message}</p>`;
+  }
+};
+
 const loadData = async () => {
   try {
     const response = await fetch("assets/data/content.json");
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
 
-    renderList(exploitList, data.exploits ?? [], "exploit");
     renderList(repoList, data.repos ?? [], "repo");
   } catch (error) {
     const message = `<p class="meta">Error cargando contenido: ${error.message}</p>`;
-    if (exploitList) exploitList.innerHTML = message;
     if (repoList) repoList.innerHTML = message;
   }
 };
 
 await typeTerminal();
-await Promise.all([loadCtfPreview(), loadData()]);
+await Promise.all([loadCtfPreview(), loadExploitPreview(), loadData()]);
